@@ -24,7 +24,7 @@ idx = 0
 def plotData():
     global idx  # 内部作用域想改变外部域变量
     tmp = np.sin(np.pi / 50 * idx)
-    if len(data) < historyLength:
+    if len(data) < historyLength*2:
         data.append(tmp)
     else:
         data[:-1] = data[1:]  # 前移

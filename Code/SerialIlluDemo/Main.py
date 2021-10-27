@@ -1,14 +1,67 @@
 import serial
 import serial.tools.list_ports
 import threading
+import Illustrate
 
-using_port = "COM12"
+using_port = "COM4"
 using_baud_rate = 115200
 using_timeout = 1
 port_case = serial.Serial()
 
 
-# class PortReadThread(threading.Thread):
+class PortReadThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def run(self):
+        print("PortReadThread started")
+        getData(self.name)
+        print("PortReadThread halted")
+
+
+def getData(thread_name, port=None):
+    if port is None:
+        port = port_case
+    process_str = ""
+    timestamp = 0
+    data = 0
+    while True:
+        """ portCase.in_waiting is length of buffer data"""
+        if port.in_waiting:
+            receive_str = port.read(port.in_waiting).decode("utf-8")
+            if "WD_EXIT" in receive_str:
+                break
+            else:
+                """ Input format: T(timestamp)S D(data)E"""
+                # TODO: improve robustness (Read buffer)
+                process_str += receive_str
+                pos_first_t = -1
+                pos_first_s = -1
+                pos_first_d = -1
+                pos_first_e = -1
+                for i in range(len(process_str)):
+                    if process_str[i] == 'T' and pos_first_t == -1:
+                        pos_first_t = i
+                    if process_str[i] == 'S' and pos_first_s == -1:
+                        pos_first_s = i
+                    if process_str[i] == 'D' and pos_first_d == -1:
+                        pos_first_d = i
+                    if process_str[i] == 'E' and pos_first_e == -1:
+                        pos_first_e = i
+                if pos_first_s == -1 or pos_first_t == -1 or pos_first_d == -1 or pos_first_e == -1:
+                    continue
+                if not (pos_first_t < pos_first_s < pos_first_d < pos_first_e):
+                    continue
+                timestamp = process_str[pos_first_t + 1:pos_first_s]
+                data = process_str[pos_first_d + 1:pos_first_e]
+                timestamp = int(timestamp)
+                data = int(data)
+                pass  # todo: add illustrating function
+                print("timestamp:", timestamp)
+                print("data:", data)
+                print()
+                process_str = ""
+
 
 def openPort(port="", bdr=0, timeout=0):
     """
@@ -53,46 +106,13 @@ def sendData(data, port=None):
 
 if __name__ == '__main__':
     # showAvailablePort()
-    if openPort(port="COM8") == -1:
+    if openPort(port="COM3") == -1:
+        print("Open port failed")
         exit()
     sendData("Serial Receiver Ready\r\n")
-    process_str = ""
-    timestamp = 0
-    data = 0
-    while True:
-        """ portCase.in_waiting is length of buffer data"""
-        if port_case.in_waiting:
-            receive_str = port_case.read(port_case.in_waiting).decode("utf-8")
-            if "WD_EXIT" in receive_str:
-                break
-            else:
-                """ Input format: T(timestamp)S D(data)E"""
-                # TODO: improve robustness (Read buffer)
-                process_str += receive_str
-                pos_first_t = -1
-                pos_first_s = -1
-                pos_first_d = -1
-                pos_first_e = -1
-                for i in range(len(process_str)):
-                    if process_str[i] == 'T' and not pos_first_t:
-                        pos_first_t = i
-                    if process_str[i] == 'S' and not pos_first_s:
-                        pos_first_s = i
-                    if process_str[i] == 'D' and not pos_first_d:
-                        pos_first_d = i
-                    if process_str[i] == 'E' and not pos_first_e:
-                        pos_first_e = i
-                if pos_first_s == -1 or pos_first_t == -1 or pos_first_d == -1 or pos_first_e == -1:
-                    continue
-                if not (pos_first_t < pos_first_s < pos_first_d < pos_first_e):
-                    continue
-                timestamp = process_str[pos_first_t:pos_first_s]
-                data = process_str[pos_first_d:pos_first_e]
-                timestamp = int(timestamp)
-                data = int(data)
-
-                pass # todo: add illustrating function
-
-                process_str = ""
+    port_read_thread = PortReadThread()
+    port_read_thread.start()
+    port_read_thread.join()
+    Illustrate.showWindow()
     port_case.close()
     print("Port Closed")
