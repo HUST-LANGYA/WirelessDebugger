@@ -124,6 +124,7 @@ def tryGetData(port=None):
     """ portCase.in_waiting is length of buffer data"""
     if port.in_waiting:
         receive_str = port.read(port.in_waiting).decode("utf-8")
+        print(receive_str)
         if "WD_EXIT" in receive_str:
             return  # todo: such will not work properly
         else:
@@ -186,7 +187,7 @@ idx = 0
 
 if __name__ == '__main__':
     # showAvailablePort()
-    if openPort(port="COM4") == -1:
+    if openPort(port="COM13") == -1:
         print("Open port failed")
         exit()
     sendData("Serial Receiver Ready\r\n")
